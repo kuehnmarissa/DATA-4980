@@ -1,0 +1,153 @@
+---
+title: "Aid Data Example"
+author: "Marissa Kuehn"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(sf)
+```
+
+## Load Aid Data
+
+```{r}
+aid <- read.csv("~/Y4-25-Spring/DATA 4980 Data Visualization/DATA-4980/Module 3/Aid Data Example - Sheet1.csv")
+```
+
+## Aggregate Data
+
+```{r}
+aid_agg <- aid %>% 
+  group_by(year,donor,recipient) %>% 
+  summarize(total_commitment = sum(commitment_amount_usd_constant))
+```
+
+```{r}
+aid_world <- aid_agg %>% 
+  group_by(year) %>% 
+  summarize(total_commitment=sum(total_commitment))
+```
+
+## Worldwide Aid
+
+```{r}
+p <- ggplot(aid_world,aes(x=year,y=total_commitment))+
+  geom_line()+
+  scale_y_continuous(labels = scales::dollar)+
+  labs(title="Total Aid Awarded in the World (1991-2010)",x="Year",y="Aid Amount (USD2009)")+
+  theme_minimal()
+  
+
+p
+```
+
+## Donors
+
+```{r}
+aid_beforeafter_donor <- aid_agg %>% filter(year>=2005) %>% 
+  mutate(period=ifelse(year<2008,'Before','After')) %>% 
+  group_by(donor,period) %>% 
+  summarize(aid_given=sum(total_commitment)) %>% 
+  arrange(desc(period))
+```
+
+```{r}
+world_map <- read_sf("~/Y4-25-Spring/DATA 4980 Data Visualization/DATA-4980/Module 3/World_Countries_(Generalized)_9029012925078512962.geojson")
+
+aid_beforeafter_donor <- aid_beforeafter_donor %>% 
+  mutate(COUNTRY=donor)
+
+donor_beforeafter_joined <- world_map %>% 
+  left_join(aid_beforeafter_donor)
+```
+```{r}
+df <- donor_beforeafter_joined %>% filter(is.na(period)|period=="Before")
+
+p_before <- ggplot(df) +
+  geom_sf(aes(fill=aid_given)) +
+  scale_fill_gradient(low="navy",high="gold",na.value = "grey70",labels=scales::dollar)+
+  labs(title="Worldwide Aid Commitments (2005-2007)",fill="Aid Commitment")
+
+df <- donor_beforeafter_joined %>% filter(is.na(period)|period=="After")
+
+p_after <- ggplot(df) +
+  geom_sf(aes(fill=aid_given)) +
+  scale_fill_gradient(low="navy",high="gold",na.value = "grey70",labels=scales::dollar)+
+  labs(title="Worldwide Aid Commitments (2008-2010)",fill="Aid Commitment")
+
+p_before
+p_after
+```
+
+```{r fig.height=10}
+df <- filter(donor_beforeafter_joined,!is.na(aid_given))
+
+p1 <- ggplot(df,aes(x=forcats::fct_rev(period),group=COUNTRY,y=aid_given)) +
+  geom_point()+
+  geom_line()+
+  scale_y_continuous(breaks = seq(0, 150000000, by = 20000000),labels=scales::dollar)+
+  labs(y="Aid Contribution (USD2009)",x="Time Period",title="Worldwide Aid Commitments (2005-2010)",subtitle="Before and After 2008")+
+  theme_minimal()+
+  facet_wrap(~COUNTRY,ncol=6)
+
+p1
+```
+
+
+## Recipients
+
+```{r}
+aid_beforeafter_recipient <- aid_agg %>% filter(year>=2005) %>% 
+  mutate(period=ifelse(year<2008,'Before','After')) %>% 
+  group_by(recipient,period) %>% 
+  summarize(aid_received=sum(total_commitment)) %>% 
+  arrange(desc(period))
+```
+
+```{r}
+world_map <- read_sf("~/Y4-25-Spring/DATA 4980 Data Visualization/DATA-4980/Module 3/World_Countries_(Generalized)_9029012925078512962.geojson")
+
+aid_beforeafter_recipient <- aid_beforeafter_recipient %>% 
+  mutate(COUNTRY=recipient)
+
+recipient_beforeafter_joined <- world_map %>% 
+  left_join(aid_beforeafter_recipient)
+```
+```{r}
+df <- recipient_beforeafter_joined %>% filter(is.na(period)|period=="Before")
+
+p_before <- ggplot(df) +
+  geom_sf(aes(fill=aid_received)) +
+  scale_fill_gradient(low="navy",high="gold",na.value = "grey70",labels=scales::dollar)+
+  labs(title="Worldwide Aid Received (2005-2007)",fill="Aid Received")
+
+df <- recipient_beforeafter_joined %>% filter(is.na(period)|period=="After")
+
+p_after <- ggplot(df) +
+  geom_sf(aes(fill=aid_received)) +
+  scale_fill_gradient(low="navy",high="gold",na.value = "grey70",labels=scales::dollar)+
+  labs(title="Worldwide Aid Received (2008-2010)",fill="Aid Received")
+
+p_before
+p_after
+```
+
+```{r fig.height=50}
+df <- filter(recipient_beforeafter_joined,!is.na(aid_received))
+
+p1 <- ggplot(df,aes(x=forcats::fct_rev(period),group=COUNTRY,y=aid_received)) +
+  geom_point()+
+  geom_line()+
+  scale_y_continuous(labels=scales::dollar)+
+  labs(y="Aid Received (USD2009)",x="Time Period",title="Worldwide Aid Received (2005-2010)",subtitle="Before and After 2008")+
+  theme_minimal()+
+  facet_wrap(~COUNTRY,ncol=4)
+
+p1
+```
+
+
