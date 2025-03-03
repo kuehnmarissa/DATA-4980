@@ -1,0 +1,60 @@
+---
+title: 'Module 5: Spotify Data'
+author: "Marissa Kuehn"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load data and libraries
+
+```{r}
+library(readxl)
+library(tidyverse)
+data <- read_xlsx("~/Y4-25-Spring/DATA 4980 Data Visualization/DATA-4980/Module 5/spotify-2023.xlsx")
+```
+
+## Data exploration and visualization
+
+```{r}
+# Sample 5 random rows to display
+sample_n(data,5)
+```
+```{r}
+# Create dataframe grouped by artist with number of songs in the dataset and total streams
+artists <- data %>% group_by(Artist) %>% summarize(songs=n(), total_streams=sum(Streams)) 
+sample_n(artists,5)
+```
+```{r}
+# Obtain top 10 artists by total stream count
+top10 <- artists %>% 
+  arrange(desc(total_streams)) %>% 
+  slice(1:10)
+```
+
+```{r}
+top10 %>%
+  ggplot()+
+  geom_col(aes(x=fct_reorder(Artist,total_streams),y=total_streams))+
+  labs(title="Top 10 Artists",x="Artist",y="Total Streams Across All Songs in Millions") +
+  scale_y_continuous(labels = scales::unit_format(unit = "M", scale = 1e-6)) +
+  coord_flip()
+```
+```{r}
+# Create dataframe grouped by year with number of songs in the dataset and total streams
+years <- data %>% group_by(`Year Released`) %>% summarize(songs=n(), total_streams=sum(Streams)) 
+sample_n(years,5)
+```
+```{r}
+years %>% ggplot()+
+  geom_col(aes(x=`Year Released`,y=songs))+
+  labs(title="Number of Songs Released By Year",x="Year Released",y="Songs Released")
+```
+```{r}
+years %>% ggplot()+
+  geom_col(aes(x=`Year Released`,y=total_streams))+
+  labs(title="Number of Songs Released By Year",x="Year Released",y="Total Streams")
+```
