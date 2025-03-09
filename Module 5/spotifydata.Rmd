@@ -17,17 +17,19 @@ library(tidyverse)
 data <- read_xlsx("~/Y4-25-Spring/DATA 4980 Data Visualization/DATA-4980/Module 5/spotify-2023.xlsx")
 ```
 
-## Data exploration and visualization
+## Data exploration, manipulation, and visualization
 
 ```{r}
-# Sample 5 random rows to display
-sample_n(data,5)
+data
 ```
+
+### By Artists
+
 ```{r}
 # Create dataframe grouped by artist with number of songs in the dataset and total streams
 artists <- data %>% group_by(Artist) %>% summarize(songs=n(), total_streams=sum(Streams)) 
-sample_n(artists,5)
 ```
+
 ```{r}
 # Obtain top 10 artists by total stream count
 top10 <- artists %>% 
@@ -36,25 +38,64 @@ top10 <- artists %>%
 ```
 
 ```{r}
+# Create bar chart
 top10 %>%
   ggplot()+
   geom_col(aes(x=fct_reorder(Artist,total_streams),y=total_streams))+
-  labs(title="Top 10 Artists",x="Artist",y="Total Streams Across All Songs in Millions") +
+  labs(title="Top 10 Artists: Total Streams on Spotify",x="Artist",y="Total Streams in Millions") +
   scale_y_continuous(labels = scales::unit_format(unit = "M", scale = 1e-6)) +
   coord_flip()
 ```
 ```{r}
+# Create bar chart
+top10 %>%
+  ggplot()+
+  geom_col(aes(x=fct_reorder(Artist,total_streams),y=songs))+
+  labs(title="Top 10 Artists: Number of Songs on Spotify",subtitle="Artists Ordered By Total Streams on Spotify",x="Artist",y="Count of Songs") +
+  coord_flip()
+```
+
+### By Year
+
+```{r}
 # Create dataframe grouped by year with number of songs in the dataset and total streams
 years <- data %>% group_by(`Year Released`) %>% summarize(songs=n(), total_streams=sum(Streams)) 
-sample_n(years,5)
 ```
+
 ```{r}
-years %>% ggplot()+
-  geom_col(aes(x=`Year Released`,y=songs))+
-  labs(title="Number of Songs Released By Year",x="Year Released",y="Songs Released")
-```
-```{r}
+# Create bar chart
 years %>% ggplot()+
   geom_col(aes(x=`Year Released`,y=total_streams))+
-  labs(title="Number of Songs Released By Year",x="Year Released",y="Total Streams")
+  labs(title="Number of Songs Released By Year in Spotify",x="Year Released",y="Total Streams in Millions")+
+  scale_y_continuous(labels = scales::unit_format(unit = "M", scale = 1e-6))
+
+```
+
+### By Musical Qualities
+
+```{r}
+# Create dataframes grouped by musical qualitities with number of songs in the dataset
+musical_mode <- data %>% group_by(Mode) %>% summarize(songs=n(), total_streams=sum(Streams)) 
+musical_key <- data %>% group_by(Key) %>% summarize(songs=n(), total_streams=sum(Streams)) 
+```
+
+```{r}
+# Create bar chart
+musical_mode %>% ggplot(aes(x=Mode,y=songs)) +
+  geom_col()+
+  labs(title="Spotify Songs By Musical Mode",x="Mode",y="Songs")
+```
+```{r}
+# Create bar chart
+musical_key %>% ggplot(aes(x=fct_reorder(Key,desc(songs)),y=songs)) +
+  geom_col()+
+  labs(title="Spotify Songs By Musical Key",x="Key",y="Songs")
+```
+
+```{r}
+# Create histogram
+data %>% ggplot() +
+  geom_bar(aes(x=BPM))+
+  scale_x_binned()+
+  labs(title="Distribution of Spotify Songs' Beats Per Minute (BPM)",x="BPM",y="Songs")
 ```
